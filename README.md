@@ -19,6 +19,7 @@
 | 学习笔记 | 个人笔记与 AI 分析分开保存，版本校验防止旧窗口覆盖较新笔记 |
 | Agent + MCP | Codex、Claude Desktop / Code、Cursor、VS Code / Copilot 和通用 Agent SDK 配置；读取课堂、笔记并保存分析 |
 | 本地一键启动 | 自动补齐 Node.js / npm / 依赖、构建和迁移；重复启动复用已有服务 |
+| 国内镜像与卸载 | 国内主备 Node.js 镜像、npmmirror 依赖下载；一键清理运行环境并保留课堂数据 |
 | 本地 stdio MCP | 自动连接与网页共享的数据库；可选只读连接，提供总结模板和结构化结果 |
 
 Gemini 负责转写，所选翻译模型负责中文翻译，ChatGPT 或其他 Agent 仅负责总结分析。总结由用户在客户端发起，并非自动后台生成。LectureFlow MCP 不调用模型，也不要求 OpenAI API Key；所选客户端的登录和模型配置由该客户端负责。
@@ -46,6 +47,8 @@ bash start.sh
 ```
 
 脚本自动安装 Node.js 22.13+ / npm 所需环境，复制不存在的 `.env` 模板，并初始化数据库。已有密钥和课堂不会被覆盖。首次运行需要联网；网页填写 Gemini / DeepSeek 或 OpenAI 兼容接口的连接参数即可。免费 Gemini 层级不包含翻译服务费用。
+
+默认通过 npmmirror 下载 Node.js 和 npm 依赖，Node.js 下载失败自动切换华为云镜像；保留 SHA256 与依赖 integrity 校验，不修改全局 npm 配置。卸载时先停止课堂并关闭 MCP 客户端，再双击 `uninstall.cmd`（macOS / Linux：`bash uninstall.sh`），清理依赖与运行缓存，保留课堂、密钥、备份及源码。[镜像设置与卸载范围](docs/LOCAL.md)。
 
 只安装和准备、暂不启动网页：
 

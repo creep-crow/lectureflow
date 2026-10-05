@@ -50,7 +50,7 @@ export async function startLocalServer(port, { configPath }) {
     if (!allowedLocalRequest(request, port)) { json(response, 403, { error: '仅允许来自本机课堂的请求。' }); return; }
     const url = new URL(request.url, `http://${request.headers.host}`);
     if (url.pathname === '/api/health') {
-      json(response, ready ? 200 : 503, { application: 'lectureflow', mode: 'local', version: '1.2.0', instance, ready });
+      json(response, ready ? 200 : 503, { application: 'lectureflow', mode: 'local', version: '1.2.1', instance, ready });
       return;
     }
     if (!ready) { json(response, 503, { error: '本地课堂正在启动，请稍后重试。' }); return; }

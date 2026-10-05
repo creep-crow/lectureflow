@@ -1,4 +1,4 @@
-export const MCP_VERSION = "1.2.0";
+export const MCP_VERSION = "1.2.1";
 export const MCP_PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 export const MCP_BODY_LIMIT = 1_000_000;
 

@@ -4,6 +4,7 @@ import path from "node:path";
 import { projectRoot } from "./sites-env.mjs";
 import { readExecutionProfile } from "./execution-profile.mjs";
 import { runNpmInstall } from "./npm-install.mjs";
+import { npmInstallOptions } from "./download-sources.mjs";
 
 if (!process.env.npm_execpath) {
   throw new Error("Run this installer with npm run install:ci.");
@@ -31,6 +32,7 @@ const installed = await runNpmInstall([
   process.execPath,
     process.env.npm_execpath, "ci", "--prefix", projectRoot, "--workspaces=false",
     "--include=dev", "--include=optional", "--prefer-offline", "--no-audit", "--no-fund",
+    ...npmInstallOptions(),
 ]);
 if (installed.signal) process.kill(process.pid, installed.signal);
 if (installed.code !== 0 || installed.signal) process.exit(installed.code || 1);

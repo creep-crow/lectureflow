@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 // Run against an already-started local website. No external model calls or keys.
 const base = process.env.TEST_URL || 'http://127.0.0.1:5173';
+const packageVersion = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 const sign = await fetch(base + '/signin-with-chatgpt?return_to=/', { redirect: 'manual' });
 const cookie = sign.headers.get('set-cookie')?.split(';')[0];
 assert.ok(cookie, 'Start the local website before this test');
@@ -36,7 +38,7 @@ try {
   await api(`/api/classrooms/${fixture.id}/segments`, { segments: rows });
   await api(`/api/classrooms/${fixture.id}`, { notes: 'Review the meaning of a derivative.', revision: 0 }, 'PATCH');
   const [first, second, reader] = await Promise.all([stdio('lectureflow-sdk-a'), stdio('lectureflow-sdk-b'), stdio('lectureflow-sdk-read-only', true)]);
-  check(first.getServerVersion()?.version === '1.2.0', 'official SDK initializes generated stdio configuration');
+  check(first.getServerVersion()?.version === packageVersion, 'official SDK initializes generated stdio configuration');
   check(first.getServerCapabilities()?.prompts !== undefined, 'server advertises summary prompts');
   const discovery = await first.listTools();
   check(discovery.tools.length === 4 && discovery.tools.every(tool => tool.outputSchema?.type === 'object'), 'SDK discovers four tools with object output schemas');

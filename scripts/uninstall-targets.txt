@@ -1,0 +1,15 @@
+node_modules
+dist
+.next
+.vinext
+out
+coverage
+tsconfig.tsbuildinfo
+.sites-runtime/toolchain
+.sites-runtime/npm-cache
+.sites-runtime/backend
+.sites-runtime/mcp-configs
+.sites-runtime/dependencies.json
+.sites-runtime/local-build.json
+.sites-runtime/local-setup.lock
+.sites-runtime/processes

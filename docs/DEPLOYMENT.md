@@ -6,6 +6,8 @@
 
 `npm start` / `node scripts/local.mjs` 为同一入口，适合已安装合适 Node.js / npm 的用户。`npm run setup` 只准备环境；`npm run mcp` 启动 stdio MCP。macOS / Linux 使用 `bash start.sh`，自动补齐环境。
 
+运行环境默认从国内主备镜像下载，npm 使用 npmmirror 和项目内缓存。卸载入口为 `uninstall.cmd` / `bash uninstall.sh`，保留个人课堂及密钥；镜像覆盖方式和具体清理范围见 [本地一键运行](LOCAL.md)。
+
 ## 本地组成
 
 前端使用 React，路由与构建使用 vinext / Vite。构建后的后端由随项目安装的 Miniflare / workerd 在本机执行，D1 本地实现将课堂保存到 SQLite；Wrangler 仅执行数据库迁移。这些依赖不调用 Cloudflare 账号，也不创建远程数据库。

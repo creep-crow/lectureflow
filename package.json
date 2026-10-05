@@ -1,6 +1,6 @@
 {
   "name": "lectureflow",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -15,10 +15,11 @@
     "mcp:config": "node scripts/local.mjs --mcp-config generic",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "test": "node --test scripts/audio.test.mjs scripts/semantic.test.mjs scripts/translation.test.mjs scripts/connection.test.mjs scripts/stream.test.mjs scripts/fast-translation.test.mjs scripts/save-queue.test.mjs scripts/local.test.mjs scripts/mcp-config.test.mjs",
+    "test": "node --test scripts/audio.test.mjs scripts/semantic.test.mjs scripts/translation.test.mjs scripts/connection.test.mjs scripts/stream.test.mjs scripts/fast-translation.test.mjs scripts/save-queue.test.mjs scripts/local.test.mjs scripts/mcp-config.test.mjs scripts/installers.test.mjs",
     "typecheck": "tsc --noEmit",
     "test:integration": "node scripts/test-integration.mjs",
-    "test:mcp": "node scripts/test-mcp-sdk.mjs"
+    "test:mcp": "node scripts/test-mcp-sdk.mjs",
+    "test:downloads": "node scripts/test-downloads.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

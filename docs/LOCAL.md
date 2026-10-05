@@ -6,7 +6,7 @@
 
 1. 从 GitHub 下载源码 ZIP，**解压全部文件**到可写的文件夹。
 2. 双击根目录的 **start.cmd**。不要以管理员身份运行。
-3. 首次启动会检查 Node.js 和 npm；缺少时从 nodejs.org 下载项目内的 Node.js 24，核对 SHA256 后解压。随后安装锁定依赖、构建、初始化本地数据库，自动打开浏览器。
+3. 首次启动会检查 Node.js 和 npm；缺少时从 npmmirror 下载项目内的 Node.js 24，失败自动尝试华为云镜像，核对 SHA256 后解压。随后通过 npmmirror 安装锁定依赖、构建、初始化本地数据库，自动打开浏览器。
 4. 在网页“连接设置”填写 Gemini 和翻译接口的密钥。无需填写 Sites ID 或登录 ChatGPT。
 
 保留启动窗口。按 Ctrl+C 停止本次启动的后台；再次启动保留课堂与设置。重复双击会打开已有服务，不会再启动一份后台。
@@ -34,20 +34,59 @@ bash start.sh
 | 导出全部 Agent 配置 | 双击 `mcp-config.cmd` | `bash start.sh --export-mcp-configs` |
 | 导出只读配置 | `start.cmd --export-mcp-configs --read-only` | `bash start.sh --export-mcp-configs --read-only` |
 | 输出 Codex TOML | `start.cmd --mcp-config codex` | `bash start.sh --mcp-config codex` |
+| 卸载依赖和运行缓存 | 双击 `uninstall.cmd` | `bash uninstall.sh` |
+| 预览卸载范围 | `uninstall.cmd -DryRun` | `bash uninstall.sh --dry-run` |
 
 默认访问 `http://127.0.0.1:5173/`。更改端口会记录为下次默认值；浏览器设置按网址分别保存，换端口后可能需要重新填写。依赖和构建正常时重复启动会复用缓存；升级源码后自动检查新依赖、重建并执行未完成迁移。
+
+## 国内下载源
+
+| 下载内容 | 默认源 | 备用 / 校验 |
+| --- | --- | --- |
+| Node.js 24 与自带 npm | `https://registry.npmmirror.com/-/binary/node` | 失败尝试 `https://repo.huaweicloud.com/nodejs`；使用对应版本的 SHA256 校验文件 |
+| npm 项目依赖 | `https://registry.npmmirror.com` | 保留 package-lock.json 中的版本与 integrity 校验 |
+
+下载源只用于补齐运行环境和依赖。安装参数仅作用于本项目，不改全局 npm 配置；下载缓存保存在 `.sites-runtime/npm-cache`，便于复用和卸载清理。锁文件保留 npm 官方地址，由安装器映射到所选 registry，不改写依赖版本或完整性值。
+
+需要改用自己的镜像或官方源时，设置 `LECTUREFLOW_NODE_MIRROR` 和 `LECTUREFLOW_NPM_REGISTRY`，再启动。网址必须为 HTTPS，不含账号密码、查询参数或片段；自定义 Node 源优先于默认主备源。例如 Windows PowerShell：
+
+```powershell
+$env:LECTUREFLOW_NODE_MIRROR = 'https://nodejs.org/dist'
+$env:LECTUREFLOW_NPM_REGISTRY = 'https://registry.npmjs.org'
+.\start.cmd
+```
+
+macOS / Linux：
+
+```sh
+LECTUREFLOW_NODE_MIRROR=https://nodejs.org/dist \
+LECTUREFLOW_NPM_REGISTRY=https://registry.npmjs.org bash start.sh
+```
+
+已有依赖可继续复用；需要重新下载时停止服务再使用 `--repair`。默认镜像设置统一保存在 `scripts/download-sources.conf`。镜像使用方式参考 [npmmirror 官方说明](https://npmmirror.com/)，Node 备用源见 [华为云 Node.js 镜像](https://repo.huaweicloud.com/nodejs/)，锁文件 registry 处理见 [npm 官方说明](https://docs.npmjs.com/cli/v11/configuring-npm/package-lock-json/)；于 2026-10-06 实测可访问。
 
 ## 数据与备份
 
 - `.wrangler/state`：本地 SQLite 课堂数据库。原文、译文、笔记、总结都在本机；网页和 MCP 共用同一份数据。
 - `.sites-runtime/backups`：需要升级已有数据库时创建的 SQL 备份。
 - `.sites-runtime/toolchain`：下载的 Node.js；`.sites-runtime/backend` 为本地配置及密钥副本。
+- `.sites-runtime/npm-cache`：本项目的 npm 下载缓存，卸载时清理。
 - `.env`：可选服务器密钥，首次复制模板，重复启动不会覆盖。
 - 浏览器 localStorage：网页填写的连接参数与密钥；保留浏览器数据、相同网址和端口才能恢复。
 
 迁移只执行尚未完成的步骤。脚本可识别以前手工迁移的完整数据库并补记迁移记录；结构不完整时会报错停止，不会删除表重建。
 
 备份前停止后台，再复制 `.wrangler/state`；课堂页面还可导出 Markdown / JSON 备份。将浏览器密钥写入 `.env` 后可随该文件单独备份。源码升级时保留 `.env`、`.wrangler`、`.sites-runtime`，覆盖程序文件即可。不要将本地数据目录和密钥上传到 GitHub。
+
+## 一键卸载
+
+先停止听讲、确认保存完成，关闭启动窗口和这个项目的 MCP 客户端。Windows 双击 `uninstall.cmd`，macOS / Linux 运行 `bash uninstall.sh`。脚本无需下载、Node.js 或管理员权限；检测到仍有安装、网页后台或 MCP 进程时停止清理，请关闭后重新运行。
+
+卸载会删除 `node_modules`、构建产物、项目内下载的 Node.js、npm 缓存、本地后台生成配置和导出的 MCP 配置。**保留 `.wrangler/state` 课堂数据、`.env` 密钥、数据库备份、端口偏好、源码及浏览器设置**，下次启动可以重新安装并继续使用。
+
+脚本不删除系统已有 Node.js、其他项目依赖、全局 npm 缓存或 Agent 的配置文件。无需继续使用 MCP 时，请在 Agent 设置中移除 `lectureflow` 条目，否则客户端仍可能自动重新启动并安装项目。浏览器密钥可在网页“连接设置”中清除。需要彻底删除便携项目时，先备份课堂和密钥，再自行删除剩余项目文件夹。
+
+`uninstall.cmd -DryRun` / `bash uninstall.sh --dry-run` 只预览范围。清理仅限这个源码文件夹，遇到指向外部的父目录链接会停止；嵌套链接仅移除链接本身。
 
 ## 本机服务与 MCP
 
@@ -61,13 +100,13 @@ bash start.sh
 
 ## 故障处理
 
-- 下载失败：检查能否访问 nodejs.org 和 registry.npmjs.org，再运行脚本。
+- 下载失败：检查能否访问 registry.npmmirror.com 和 repo.huaweicloud.com，或按上文设置自己的 HTTPS 镜像，再运行脚本。
 - 依赖缺失或构建异常：先停止后台，再运行 `start.cmd --repair`，不会清除数据库或 `.env`。
 - 端口被占用：关闭占用程序，或使用 `--port 5180`。后台只复用当前文件夹的 LectureFlow，不把其他程序误认成课堂。
 - 无法使用麦克风：使用脚本显示的 127.0.0.1 地址，允许浏览器麦克风权限；Gemini Key 与模型权限仍需自行配置。
 - 同步失败：保留页面并导出课堂备份，确认启动窗口仍在运行，再重试同步。
 - 退出窗口后服务残留：优先 Ctrl+C 正常停止。直接强制关闭终端可能中断清理；重新打开脚本前关闭上次启动的后台进程。
 
-Node.js 下载来源：[官方 Node.js 24 分发目录](https://nodejs.org/download/release/latest-v24.x/)。迁移机制参考 [Cloudflare D1 官方说明](https://developers.cloudflare.com/d1/reference/migrations/)，本地数据库由随项目安装的运行时提供，不需要 Cloudflare 账户。
+Node.js 上游为 [官方 Node.js 24 分发目录](https://nodejs.org/download/release/latest-v24.x/)，默认通过上述国内镜像下载。迁移机制参考 [Cloudflare D1 官方说明](https://developers.cloudflare.com/d1/reference/migrations/)，本地数据库由随项目安装的运行时提供，不需要 Cloudflare 账户。
 
-本次已在 Windows x64 实测首次补齐依赖、构建、迁移、服务复用与真实 stdio 读写；macOS / Linux 脚本通过语法检查，尚未实机验证。
+已在 Windows x64 实测国内镜像安装、备用源切换、构建、迁移、服务复用与真实 stdio 读写，并在临时目录验证卸载保留个人数据及目录链接保护。macOS / Linux 提供对应脚本，尚未实机验证。开发者可显式运行 `npm run test:downloads` 重验真实下载；它仅在 Windows 临时目录测试 Node.js 和少量 npm 依赖，不调用模型。

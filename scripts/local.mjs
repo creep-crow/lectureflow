@@ -8,6 +8,8 @@ import { prepareDatabase } from './local-db.mjs';
 import { startLocalServer } from './local-server.mjs';
 import { runStdioBridge } from './mcp-stdio.mjs';
 import { generateMcpConfig, mcpClients } from './mcp-config.mjs';
+import { npmInstallOptions } from './download-sources.mjs';
+import { trackLocalProcess } from './local-process.mjs';
 
 const { values } = parseArgs({ options: { mcp: { type: 'boolean' }, 'read-only': { type: 'boolean' }, 'mcp-config': { type: 'string' }, 'export-mcp-configs': { type: 'boolean' }, 'prepare-only': { type: 'boolean' }, repair: { type: 'boolean' }, 'no-open': { type: 'boolean' }, port: { type: 'string' }, help: { type: 'boolean' } } });
 if (values.help) {
@@ -36,12 +38,14 @@ if (values['mcp-config'] || values['export-mcp-configs']) {
   process.exit(0);
 }
 const origin = `http://127.0.0.1:${port}`;
+const releaseProcess = await trackLocalProcess();
 let ownedServer;
 let lockHandle;
 const lockPath = path.join(runtime, 'local-setup.lock');
 const cleanup = async () => {
   if (ownedServer) { await ownedServer.close(); ownedServer = undefined; }
   if (lockHandle) { await lockHandle.close(); lockHandle = undefined; await rm(lockPath, { force: true }); }
+  await releaseProcess();
 };
 for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { void cleanup().finally(() => process.exit(0)); });
 const openBrowser = () => {
@@ -83,8 +87,8 @@ try {
       }
       if (!complete || values.repair) {
         await access(npmCli).catch(() => { throw new Error('npm 不可用，请通过 start.cmd / bash start.sh 启动。'); });
-        log('正在安装或修复锁定版本的依赖，首次运行需要联网。');
-        runNode([npmCli, 'ci', '--include=dev', '--include=optional', '--no-audit', '--no-fund'], { env: { SHARP_IGNORE_GLOBAL_LIBVIPS: '1' } });
+        log('正在通过配置的 npm 镜像安装锁定版本依赖，首次运行需要联网。');
+        runNode([npmCli, 'ci', '--include=dev', '--include=optional', '--no-audit', '--no-fund', ...npmInstallOptions()], { env: { SHARP_IGNORE_GLOBAL_LIBVIPS: '1' } });
         await writeFile(stampPath, JSON.stringify({ hash: dependencyHash }));
       } else log('依赖已就绪。');
       try { await copyFile(path.join(root, '.env.example'), path.join(root, '.env'), 1); } catch (error) { if (error.code !== 'EEXIST') throw error; }
@@ -119,4 +123,6 @@ try {
   await cleanup();
   log(error.code === 'EADDRINUSE' ? `端口 ${port} 已被其他程序占用。关闭该程序，或使用 start.cmd --port 5180。` : error.message);
   process.exitCode = 1;
+} finally {
+  await releaseProcess();
 }
