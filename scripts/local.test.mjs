@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Readable, Writable } from 'node:stream';
+import { Readable, Writable, PassThrough } from 'node:stream';
 import { inferLegacyMigrations } from './local-db.mjs';
 import { allowedLocalRequest, safeReturn } from './local-server.mjs';
 import { validatePort } from './local-core.mjs';
@@ -76,4 +76,52 @@ test('stdio parse errors, invalid batches and backend failures remain structured
 test('stdio refuses remote endpoints and unauthenticated local servers', async () => {
   await assert.rejects(() => runStdioBridge('https://evil.example'), /127.0.0.1/);
   await assert.rejects(() => bridge([], async () => new Response(null, { status: 401 })), /无法连接本地课堂/);
+});
+
+test('stdio receives cancellation during an in-flight call without blocking another read', async () => {
+  const input = new PassThrough();
+  let entered, released, aborted = false;
+  const started = new Promise(resolve => { entered = resolve; });
+  const completed = new Promise(resolve => { released = resolve; });
+  const replies = [];
+  const running = runStdioBridge('http://127.0.0.1:5173', {
+    input,
+    output: new Writable({ write(chunk, encoding, done) { replies.push(JSON.parse(chunk)); released(); done(); } }),
+    fetchImpl: async (url, options) => {
+      if (url.includes('signin')) return signResponse();
+      const message = JSON.parse(options.body);
+      if (message.id === 'slow') {
+        entered();
+        return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => { aborted = true; reject(new Error('cancelled')); }, { once: true }));
+      }
+      return Response.json({ jsonrpc: '2.0', id: message.id, result: {} });
+    },
+  });
+  input.write(JSON.stringify({ jsonrpc: '2.0', id: 'slow', method: 'tools/call' }) + '\n');
+  await started;
+  input.write(JSON.stringify({ jsonrpc: '2.0', id: 'fast', method: 'ping' }) + '\n');
+  await completed;
+  input.end(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/cancelled', params: { requestId: 'slow' } }) + '\n');
+  await running;
+  assert.equal(aborted, true);
+  assert.deepEqual(replies.map(reply => reply.id), ['fast']);
+});
+
+test('stdio orders summary writes and forwards large Chinese payloads with read-only scope', async () => {
+  const input = Readable.from([0, 1].map(id => JSON.stringify({ jsonrpc: '2.0', id, method: 'tools/call', params: { name: 'save_classroom_analysis', arguments: { content: '中'.repeat(100000) } } }) + '\n'));
+  let active = 0, peak = 0, replies = 0;
+  await runStdioBridge('http://127.0.0.1:5173', {
+    input, readOnly: true,
+    output: new Writable({ write(chunk, encoding, done) { assert.ok(JSON.parse(chunk).result); replies++; done(); } }),
+    fetchImpl: async (url, options) => {
+      if (url.includes('signin')) return signResponse();
+      assert.equal(options.headers['x-lectureflow-mcp-read-only'], '1');
+      active++; peak = Math.max(peak, active);
+      await new Promise(resolve => setImmediate(resolve));
+      active--;
+      return Response.json({ jsonrpc: '2.0', id: JSON.parse(options.body).id, result: {} });
+    },
+  });
+  assert.equal(replies, 2);
+  assert.equal(peak, 1);
 });

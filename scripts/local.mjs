@@ -7,10 +7,11 @@ import { root, runtime, log, validatePort, runNode, buildFingerprint, probeLocal
 import { prepareDatabase } from './local-db.mjs';
 import { startLocalServer } from './local-server.mjs';
 import { runStdioBridge } from './mcp-stdio.mjs';
+import { generateMcpConfig, mcpClients } from './mcp-config.mjs';
 
-const { values } = parseArgs({ options: { mcp: { type: 'boolean' }, 'prepare-only': { type: 'boolean' }, repair: { type: 'boolean' }, 'no-open': { type: 'boolean' }, port: { type: 'string' }, help: { type: 'boolean' } } });
+const { values } = parseArgs({ options: { mcp: { type: 'boolean' }, 'read-only': { type: 'boolean' }, 'mcp-config': { type: 'string' }, 'export-mcp-configs': { type: 'boolean' }, 'prepare-only': { type: 'boolean' }, repair: { type: 'boolean' }, 'no-open': { type: 'boolean' }, port: { type: 'string' }, help: { type: 'boolean' } } });
 if (values.help) {
-  log('start.cmd / bash start.sh [--port 5173] [--no-open] [--prepare-only] [--repair]\nmcp.cmd / bash start.sh --mcp：本地 stdio MCP，所有启动日志输出到 stderr。');
+  log('start.cmd / bash start.sh [--port 5173] [--no-open] [--prepare-only] [--repair]\nmcp.cmd / bash start.sh --mcp [--read-only]：本地 stdio MCP。\n--mcp-config generic|codex|claude-desktop|claude-code|cursor|vscode：输出接入配置\n--export-mcp-configs：导出全部客户端配置至 .sites-runtime/mcp-configs。');
   process.exit(0);
 }
 const [major, minor] = process.versions.node.split('.').map(Number);
@@ -20,6 +21,20 @@ const preferencesPath = path.join(runtime, 'local-preferences.json');
 let preferences = {};
 try { preferences = JSON.parse(await readFile(preferencesPath, 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
 const port = validatePort(values.port || preferences.port || 5173);
+if (values['mcp-config'] || values['export-mcp-configs']) {
+  const options = { executable: process.execPath, directory: root, port, readOnly: !!values['read-only'] };
+  if (values['export-mcp-configs']) {
+    const directory = path.join(runtime, 'mcp-configs');
+    await mkdir(directory, { recursive: true });
+    for (const client of Object.keys(mcpClients)) {
+      const generated = generateMcpConfig({ ...options, client });
+      await writeFile(path.join(directory, generated.filename), generated.content);
+    }
+    log('已导出全部客户端配置：' + directory + '\n将 lectureflow 条目合并到客户端配置，保留其他服务。首次接入前请先完成网页启动。');
+  }
+  if (values['mcp-config']) process.stdout.write(generateMcpConfig({ ...options, client: values['mcp-config'] }).content);
+  process.exit(0);
+}
 const origin = `http://127.0.0.1:${port}`;
 let ownedServer;
 let lockHandle;
@@ -92,7 +107,7 @@ try {
     if (lockHandle) { await lockHandle.close(); lockHandle = undefined; await rm(lockPath, { force: true }); }
   } else log('复用已运行的本地课堂。');
   if (values['prepare-only']) { log('依赖、构建和本地数据库已准备完成。'); await cleanup(); }
-  else if (values.mcp) { await runStdioBridge(origin); await cleanup(); }
+  else if (values.mcp) { await runStdioBridge(origin, { readOnly: !!values['read-only'] }); await cleanup(); }
   else {
     log(`课堂已就绪：${origin}` + (ownedServer
       ? '\n请保留此窗口；按 Ctrl+C 可停止本次启动的服务。'

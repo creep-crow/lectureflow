@@ -52,3 +52,5 @@ node scripts/verify-release.mjs
 启动本地后台后可运行 `npm run test:integration`。真实 Gemini / 翻译接口测试会使用自己的密钥和额度。发布源码时排除 `.env`、`.wrangler`、`.sites-runtime`、课堂数据及构建缓存。
 
 本地后台运行时执行 `node scripts/test-local-integration.mjs`，检查真实 stdio 启动、共享数据、总结写回和客户端退出。自定义端口时设置 `TEST_URL` 为该地址。
+
+`npm run test:mcp` 使用官方 MCP SDK 验证多个 stdio Agent 连接和认证后的 Streamable HTTP 连接。多客户端接入前请先启动网页，配置导出与 SDK 示例见 [多 Agent MCP 接入](MCP.md)。

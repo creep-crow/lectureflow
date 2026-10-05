@@ -122,7 +122,7 @@ export default function RecordDetail() {
                     <article className="record-analysis" key={a.id}>
                       <h3>{a.title}</h3>
                       <p className="record-meta">
-                        ChatGPT ·{" "}
+                        AI 助手 ·{" "}
                         {new Date(a.created_at).toLocaleString("zh-CN")}
                       </p>
                       <div>{a.content}</div>
@@ -130,7 +130,7 @@ export default function RecordDetail() {
                   ))
                 ) : (
                   <p className="record-placeholder">
-                    打开课堂后，可以通过 ChatGPT 生成总结。
+                    打开课堂后，可以通过支持 MCP 的 AI 助手生成总结。
                   </p>
                 )}
               </section>

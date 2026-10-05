@@ -14,7 +14,7 @@ flowchart LR
   Context --> Edit
   Edit --> CAS[整组快照校验]
   CAS --> DB
-  ChatGPT[桌面客户端总结] --> Stdio[本地 stdio]
+  Agent[Codex / Claude / Cursor / 其他 Agent] --> Stdio[本地 stdio]
   Stdio --> Local[本地会话入口]
   Local --> MCP[MCP 路由]
   MCP <--> DB
@@ -23,6 +23,8 @@ flowchart LR
 ## 本地启动
 
 `start.cmd` / `start.sh` 先补齐 Node.js 和 npm；`scripts/local.mjs` 管理依赖缓存、构建、迁移、启动互斥与服务复用。`local-server.mjs` 核验 loopback Host / Origin、签发本机会话、清除外来身份头并向构建后的后台注入本地用户。`local-db.mjs` 维护 SQLite 迁移记录与升级备份。`mcp-stdio.mjs` 将桌面 MCP 消息转发至同一后台，所有日志走 stderr。
+
+`scripts/mcp-config.mjs` 生成各客户端 JSON / TOML，网页和导出脚本使用同一生成器。`lib/mcp-protocol.ts` 提供版本协商、结构化工具输出和总结提示模板。只读参数由 stdio 连接传到 HTTP 路由，路由同时隐藏与拒绝写入工具；读取可并发，单个连接内的写入排队，跨连接分析重试使用 UUID 去重。模型在客户端调用，服务不绑定某家 Agent SDK。
 
 本地版本不注册 Sites，也不使用开发模式的身份模拟。Miniflare/workerd 和 D1 SQLite 作为随应用安装的固定本地运行时；Wrangler 只管理迁移。保留原路由和数据访问代码，网页与 MCP 使用相同的本地身份和数据库目录。
 
@@ -56,6 +58,7 @@ classrooms 保存标题、笔记、修订版本和删除时间，segments 保存
 | `app/api/classrooms` / `lib/classroom-store.ts` | 课堂读写、分页、冲突与原子保存 |
 | `app/records` | 回看、管理和回收站 |
 | `app/mcp/route.ts` / `scripts/mcp-stdio.mjs` | MCP 工具与本地 stdio |
+| `scripts/mcp-config.mjs` / `lib/mcp-protocol.ts` | 多客户端配置、只读连接、结构化结果与总结模板 |
 | `scripts/local*.mjs` | 独立本地启动、认证、运行时与迁移 |
 | `hooks/use-webmcp.ts` | 浏览器课堂只读工具 |
 | `drizzle` | D1 迁移 |

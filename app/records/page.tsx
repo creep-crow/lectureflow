@@ -331,7 +331,7 @@ export default function RecordsPage() {
         <DialogContent>
           <DialogTitle>重命名课堂</DialogTitle>
           <DialogDescription>
-            名称会同步显示在课堂和 ChatGPT 的记录列表中。
+            名称会同步显示在课堂和 Agent 的记录列表中。
           </DialogDescription>
           <form
             onSubmit={(e) => {
@@ -379,7 +379,7 @@ export default function RecordsPage() {
         <DialogContent>
           <DialogTitle>将课堂移入回收站？</DialogTitle>
           <DialogDescription>
-            「{remove?.title}」将从课堂列表及 ChatGPT
+            「{remove?.title}」将从课堂列表及 Agent
             可读取的记录中隐藏。原文、译文、笔记和总结仍保留，可以在回收站恢复。
           </DialogDescription>
           <div className="record-dialog-actions">

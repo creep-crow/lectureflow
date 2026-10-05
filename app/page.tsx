@@ -66,8 +66,22 @@ export default function Home() {
     [copied, setCopied] = useState(false),
     [endpoint, setEndpoint] = useState(""),
     [mcpConfig, setMcpConfig] = useState(""),
+    [mcpClient, setMcpClient] = useState("generic"),
+    [mcpReadOnly, setMcpReadOnly] = useState(false),
+    [mcpPlacement, setMcpPlacement] = useState(""),
+    [mcpLoading, setMcpLoading] = useState(false),
     [configured, setConfigured] = useState({ gemini: false, deepseek: false });
   const scroll = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!mcpOpen) return;
+    const controller = new AbortController();
+    void fetch(`/api/local/mcp-config?client=${encodeURIComponent(mcpClient)}&readOnly=${mcpReadOnly ? "1" : "0"}`, { signal: controller.signal })
+      .then(async response => response.ok ? await response.json() as { content?: string; placement?: string } : null)
+      .then(data => { if (!controller.signal.aborted) { setMcpConfig(data?.content || ""); setMcpPlacement(data?.placement || ""); } })
+      .catch(() => {})
+      .finally(() => { if (!controller.signal.aborted) setMcpLoading(false); });
+    return () => controller.abort();
+  }, [mcpOpen, mcpClient, mcpReadOnly]);
   useEffect(() => {
     void fetch("/api/config")
       .then((r) => (r.ok ? r.json() : null))
@@ -94,6 +108,7 @@ export default function Home() {
       c.current.id +
       "）的完整转写和已有笔记，按 nextCursor 读取所有分页。请用中文梳理核心概念、论证脉络、难点与复习问题，引用转写时间戳，区分课堂原文与补充解释，并调用 save_classroom_analysis 将总结保存到这堂课。不要修改转写或翻译。"
     : "请使用 LectureFlow 的 list_classrooms 找到最近一堂课，完整读取其转写与笔记，分析核心概念和难点，并调用 save_classroom_analysis 保存总结。";
+  const displayedPrompt = mcpReadOnly ? prompt.replace(/并调用 save_classroom_analysis[^。]*。/g, "只在聊天中展示总结，不要保存分析。") : prompt;
   async function copy(text: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -113,14 +128,16 @@ export default function Home() {
     }
   }
   function openMcp(value: boolean) {
+    if (value) resetMcpConfig();
     if (value) {
       setEndpoint(location.origin + "/mcp");
-      void fetch("/api/local/mcp-config")
-        .then((response) => (response.ok ? response.json() : null))
-        .then((data) => setMcpConfig(data ? JSON.stringify(data, null, 2) : ""))
-        .catch(() => setMcpConfig(""));
     }
     setMcpOpen(value);
+  }
+  function resetMcpConfig() {
+    setMcpConfig("");
+    setMcpPlacement("");
+    setMcpLoading(true);
   }
   function begin() {
     if (
@@ -481,7 +498,7 @@ export default function Home() {
                 <Sparkles size={18} />
                 学习助手
               </h2>
-              <span className="ai-label">ChatGPT + MCP</span>
+              <span className="ai-label">Agent + MCP</span>
             </div>
             <Tabs defaultValue="summary" className="assistant-tabs">
               <TabsList className="study-tablist">
@@ -497,7 +514,7 @@ export default function Home() {
                       <article className="analysis-card" key={a.id}>
                         <div className="analysis-meta">
                           <Sparkles size={13} />
-                          ChatGPT ·{" "}
+                          AI 助手 ·{" "}
                           {new Date(a.created_at).toLocaleDateString("zh-CN")}
                         </div>
                         <h3>{a.title}</h3>
@@ -519,7 +536,7 @@ export default function Home() {
                     </div>
                     <h3>从听懂，到掌握</h3>
                     <p>
-                      让 ChatGPT 帮你梳理课堂脉络，
+                      让 AI 助手帮你梳理课堂脉络，
                       <br />
                       解释难点，建立知识之间的联系。
                     </p>
@@ -538,10 +555,10 @@ export default function Home() {
                     ))}
                     <button className="dark-btn" onClick={() => openMcp(true)}>
                       <Plug size={16} />
-                      通过 ChatGPT 总结
+                      通过 Agent 总结
                       <ArrowUpRight size={15} />
                     </button>
-                    <small>Gemini 转写 · 所选模型翻译 · ChatGPT 总结</small>
+                    <small>Gemini 转写 · 所选模型翻译 · Agent 总结</small>
                   </div>
                 )}
               </TabsContent>
@@ -570,7 +587,7 @@ export default function Home() {
                       </button>
                     </div>
                     <p className="help-text">
-                      ChatGPT 的分析单独保存在“课堂总结”，不会覆盖你的笔记。
+                      AI 助手的分析单独保存在“课堂总结”，不会覆盖你的笔记。
                     </p>
                   </>
                 ) : (
@@ -596,7 +613,7 @@ export default function Home() {
               <div>
                 <strong>跟上课堂的节奏</strong>
                 <p>
-                  原文帮助理解语境，译文辅助快速掌握。遇到难点，课后交给 ChatGPT
+                  原文帮助理解语境，译文辅助快速掌握。遇到难点，课后交给 AI 助手
                   深入解析。
                 </p>
               </div>
@@ -642,14 +659,30 @@ export default function Home() {
           </DialogDescription>
           <ol className="mcp-steps">
             <li>
-              在 Codex 等桌面客户端添加本地 MCP，使用项目目录的 mcp.cmd。
-              下方配置已填写这台电脑的程序位置。
+              选择你使用的客户端，将下方 LectureFlow 配置合并进去，保留其他服务。
+              配置已填写这台电脑的程序位置。
             </li>
             <li>启用 LectureFlow，发送下方的总结请求。</li>
             <li>完成后回到此处；“课堂总结”会自动同步。</li>
           </ol>
+          <label className="field">
+            Agent 客户端
+            <select aria-label="Agent 客户端" value={mcpClient} onChange={event => { resetMcpConfig(); setMcpClient(event.target.value); }}>
+              <option value="generic">通用 MCP / Agent SDK</option>
+              <option value="codex">Codex</option>
+              <option value="claude-desktop">Claude Desktop</option>
+              <option value="claude-code">Claude Code</option>
+              <option value="cursor">Cursor</option>
+              <option value="vscode">VS Code / Copilot</option>
+            </select>
+          </label>
+          <label className="mcp-access-option">
+            <input type="checkbox" checked={mcpReadOnly} onChange={event => { resetMcpConfig(); setMcpReadOnly(event.target.checked); }} />
+            只读接入（可总结，不能保存分析）
+          </label>
+          {mcpPlacement && <p className="settings-help">{mcpPlacement}</p>}
           {mcpConfig ? (
-            <details>
+            <details open>
               <summary>查看本地 MCP 配置</summary>
               <pre className="mcp-code">{mcpConfig}</pre>
               <button className="outline-btn" onClick={() => void copy(mcpConfig)}>
@@ -657,13 +690,13 @@ export default function Home() {
               </button>
             </details>
           ) : (
-            <p className="settings-help">请通过 start.cmd 或 bash start.sh 启动，以获取本地 MCP 配置。</p>
+            <p className="settings-help">{mcpLoading ? "正在生成当前电脑的配置…" : "请通过 start.cmd 或 bash start.sh 启动，以获取本地 MCP 配置。"}</p>
           )}
-          <div className="mcp-code">{prompt}</div>
+          <div className="mcp-code">{displayedPrompt}</div>
           <button
             className="dark-btn"
             disabled={!!c.unsaved || c.demo}
-            onClick={() => void copy(prompt)}
+            onClick={() => void copy(displayedPrompt)}
           >
             <Copy size={14} />
             {copied ? "已复制" : "复制总结请求"}
@@ -677,8 +710,8 @@ export default function Home() {
             <summary>查看 MCP 地址与工具</summary>
             <code className="endpoint">{endpoint}</code>
             <p className="settings-help">
-              list_classrooms · read_classroom · read_notes ·
-              save_classroom_analysis
+              list_classrooms · read_classroom · read_notes
+              {!mcpReadOnly && " · save_classroom_analysis"}
               <br />
               本地桌面客户端使用 stdio 入口。ChatGPT 网页版无法直接执行本机脚本；
               使用网页版时可导出课堂分析，远程 MCP 需另行配置。

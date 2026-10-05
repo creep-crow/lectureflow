@@ -680,6 +680,12 @@ h1 > span {
   font-size: 11px;
   line-height: 1.8;
 }
+.mcp-access-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
 .recording .mic-bubble {
   color: #298567;
   border-color: #a4c4ad;

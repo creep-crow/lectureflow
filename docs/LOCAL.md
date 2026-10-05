@@ -31,6 +31,9 @@ bash start.sh
 | 不自动打开网页 | `start.cmd --no-open` | `bash start.sh --no-open` |
 | 更改端口 | `start.cmd --port 5180` | `bash start.sh --port 5180` |
 | 本地 stdio MCP | 由客户端执行 `mcp.cmd` | 由客户端执行 `bash start.sh --mcp` |
+| 导出全部 Agent 配置 | 双击 `mcp-config.cmd` | `bash start.sh --export-mcp-configs` |
+| 导出只读配置 | `start.cmd --export-mcp-configs --read-only` | `bash start.sh --export-mcp-configs --read-only` |
+| 输出 Codex TOML | `start.cmd --mcp-config codex` | `bash start.sh --mcp-config codex` |
 
 默认访问 `http://127.0.0.1:5173/`。更改端口会记录为下次默认值；浏览器设置按网址分别保存，换端口后可能需要重新填写。依赖和构建正常时重复启动会复用缓存；升级源码后自动检查新依赖、重建并执行未完成迁移。
 
@@ -52,7 +55,9 @@ bash start.sh
 
 `mcp.cmd` 使用 stdio 与桌面客户端交互，所有安装/启动日志输出至 stderr；协议输出独占 stdout。已有网页后台时直接复用；否则准备依赖并启动后台，客户端关闭后结束其自行启动的后台。建议先双击启动网页，再连接 MCP，避免客户端关闭影响正在听讲的课堂。
 
-网页“连接总结助手”可以复制当前电脑的 MCP 配置及总结请求。详见 [本地 MCP 接入](MCP.md)。本地 stdio 能用于支持它的桌面客户端；ChatGPT 网页版不能直接启动电脑中的脚本。需要网页版时可导出课堂给 ChatGPT 分析，或另行部署带 HTTPS/OAuth 的远程 MCP，不能直接把 localhost 填作云端地址。
+网页“连接总结助手”可以按 Codex、Claude Desktop / Code、Cursor、VS Code / Copilot 或通用 SDK 复制当前电脑的配置。勾选“只读连接”后，客户端只能读取课堂与笔记，不能保存分析。`mcp-config.cmd` 将全部配置导出到 `.sites-runtime/mcp-configs` 并打开文件夹；再次导出会更新这些生成文件，客户端原有设置不会被改写。更换项目文件夹或端口后请重新生成。
+
+同时连接多个 Agent 时，先启动并保留网页后台窗口，再启动各客户端，避免退出第一个自行启动后台的 MCP 客户端后影响其他连接。多个 Agent 共用本机课堂空间；彼此追加的分析可在网页回看。详见 [多 Agent MCP 接入](MCP.md)。ChatGPT 网页版不能直接启动电脑中的脚本，需要网页版时可导出课堂给 ChatGPT 分析，或另行部署带 HTTPS/OAuth 的远程 MCP。
 
 ## 故障处理
 

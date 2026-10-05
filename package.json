@@ -1,6 +1,6 @@
 {
   "name": "lectureflow",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -12,11 +12,13 @@
     "start": "node scripts/local.mjs",
     "setup": "node scripts/local.mjs --prepare-only",
     "mcp": "node scripts/local.mjs --mcp",
+    "mcp:config": "node scripts/local.mjs --mcp-config generic",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "test": "node --test scripts/audio.test.mjs scripts/semantic.test.mjs scripts/translation.test.mjs scripts/connection.test.mjs scripts/stream.test.mjs scripts/fast-translation.test.mjs scripts/save-queue.test.mjs scripts/local.test.mjs",
+    "test": "node --test scripts/audio.test.mjs scripts/semantic.test.mjs scripts/translation.test.mjs scripts/connection.test.mjs scripts/stream.test.mjs scripts/fast-translation.test.mjs scripts/save-queue.test.mjs scripts/local.test.mjs scripts/mcp-config.test.mjs",
     "typecheck": "tsc --noEmit",
-    "test:integration": "node scripts/test-integration.mjs"
+    "test:integration": "node scripts/test-integration.mjs",
+    "test:mcp": "node scripts/test-mcp-sdk.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -48,6 +50,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
     "@cloudflare/workers-types": "4.20260515.1",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
@@ -81,5 +84,5 @@
       "sharp": "0.35.4"
     }
   },
-  "description": "English classroom live transcription, contextual Chinese translation, and ChatGPT analysis through MCP."
+  "description": "English classroom live transcription, contextual Chinese translation, and multi-agent analysis through local MCP."
 }

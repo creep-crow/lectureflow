@@ -4,6 +4,7 @@ import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { root, instance, startNode, stopChild, wait } from './local-core.mjs';
 import path from 'node:path';
+import { generateMcpConfig } from './mcp-config.mjs';
 
 export function safeReturn(value) {
   if (!value?.startsWith('/') || value.startsWith('//')) return '/';
@@ -49,7 +50,7 @@ export async function startLocalServer(port, { configPath }) {
     if (!allowedLocalRequest(request, port)) { json(response, 403, { error: '仅允许来自本机课堂的请求。' }); return; }
     const url = new URL(request.url, `http://${request.headers.host}`);
     if (url.pathname === '/api/health') {
-      json(response, ready ? 200 : 503, { application: 'lectureflow', mode: 'local', version: '1.1.0', instance, ready });
+      json(response, ready ? 200 : 503, { application: 'lectureflow', mode: 'local', version: '1.2.0', instance, ready });
       return;
     }
     if (!ready) { json(response, 503, { error: '本地课堂正在启动，请稍后重试。' }); return; }
@@ -66,7 +67,10 @@ export async function startLocalServer(port, { configPath }) {
       return;
     }
     if (url.pathname === '/api/local/mcp-config') {
-      json(response, 200, { mcpServers: { lectureflow: { command: process.execPath, args: [path.join(root, 'scripts/local.mjs'), '--mcp', '--port', String(port)] } } });
+      try {
+        const generated = generateMcpConfig({ client: url.searchParams.get('client') || 'generic', executable: process.execPath, directory: root, port, readOnly: url.searchParams.get('readOnly') === '1' });
+        json(response, 200, url.searchParams.has('client') ? generated : generated.config);
+      } catch { json(response, 400, { error: '不支持的 MCP 客户端。' }); }
       return;
     }
     const headers = { ...request.headers, host: `127.0.0.1:${backendPort}` };
@@ -78,7 +82,9 @@ export async function startLocalServer(port, { configPath }) {
     if (headers.origin) headers.origin = backendOrigin;
     const cookies = String(headers.cookie || '').split(';').map(value => value.trim()).filter(value => !value.startsWith(cookieName + '='));
     if (cookies.length) headers.cookie = cookies.join('; '); else delete headers.cookie;
-    const upstream = http.request(backendOrigin + url.pathname + url.search, { method: request.method, headers }, incoming => {
+    // workerd may close an idle keep-alive socket just as Node reuses it.
+    // A fresh loopback connection avoids ECONNRESET without retrying a write.
+    const upstream = http.request(backendOrigin + url.pathname + url.search, { method: request.method, headers, agent: false }, incoming => {
       const outgoingHeaders = { ...incoming.headers };
       if (outgoingHeaders.location?.startsWith(backendOrigin)) outgoingHeaders.location = outgoingHeaders.location.slice(backendOrigin.length) || '/';
       response.writeHead(incoming.statusCode || 502, outgoingHeaders);
