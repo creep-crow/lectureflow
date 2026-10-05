@@ -20,36 +20,14 @@
 Gemini 负责转写，所选翻译模型负责中文翻译，ChatGPT 仅负责总结分析。总结由用户在聊天中发起，并非自动后台生成。
 
 ## 免费层级 Gemini API Key：简短教程
+因为google ai studio的gemini3.5 transcribe live即使是免费层级也可以无限额使用，所以本项目转写部分使用该模型。
 
 1. 打开 [Google AI Studio](https://aistudio.google.com/)，使用 Google 账号登录，按页面提示完成首次使用设置。
 2. 进入 [API Keys 页面](https://aistudio.google.com/api-keys)。新用户可能已有默认项目和密钥；也可点击 **Create API key**，选择或创建自己的项目。已有 Cloud 项目需先在 Projects 导入。
 3. 在项目/密钥列表确认 **Billing Tier 为 Free Tier**。如只想使用免费层级，不进行 **Set up billing / Upgrade**，也不要选择已经关联付费账单的项目。
 4. 复制密钥，在 LectureFlow 的“连接设置 → Gemini API Key”中粘贴，点击“保存并应用”；本地开发也可填入 `.env` 的 `GEMINI_API_KEY`。不要将密钥写进仓库。
 
-Google 新账户从 Free Tier 起步，但仅部分模型有免费额度；Live 转写模型是否可用以及请求额度，应以自己项目的控制台和模型定价为准。创建免费密钥不等于所有模型免费或无限制。参考 [Google 官方密钥教程](https://ai.google.dev/gemini-api/docs/api-key)、[免费层级说明](https://ai.google.dev/gemini-api/docs/billing/)及[额度说明](https://ai.google.dev/gemini-api/docs/rate-limits)。本教程于 2026-10-06 核对。
 
-## 快速开始
-
-需要 Node.js 22.13+ 和 npm。
-
-```sh
-npm ci
-cp .env.example .env
-npm run build
-```
-
-Windows PowerShell 使用 `Copy-Item .env.example .env`。在 `.env` 填写自己的 Gemini / DeepSeek 密钥，或启动后在网页连接设置中填写。仓库不包含可用密钥；免费 Gemini 层级不包含翻译服务费用。
-
-首次使用空的本地数据库，依次运行三项迁移；已应用的迁移不要重复执行：
-
-```sh
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_rapid_vulture.sql
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_colorful_changeling.sql
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0002_confused_shadowcat.sql
-npm run dev
-```
-
-打开 `http://127.0.0.1:5173/signin-with-chatgpt?return_to=/` 进入本地模拟账户。模拟登录仅用于 loopback 开发环境，生产需要真实认证边界。
 
 ## 文档
 
