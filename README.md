@@ -26,14 +26,15 @@ Gemini 负责转写，所选翻译模型负责中文翻译，ChatGPT 仅负责�
 
 ## 免费层级 Gemini API Key：简短教程
 
-默认使用 `gemini-3.5-transcribe-live` 连续转写，减少分段请求次数。该模型提供免费层级，参见 [Google 官方定价](https://ai.google.dev/gemini-api/docs/pricing#gemini-3.5-transcribe-live)；实际额度以自己的 [AI Studio 项目额度](https://aistudio.google.com/rate-limit)为准，不能保证无限使用，参见 [Google 额度说明](https://ai.google.dev/gemini-api/docs/rate-limits)。
+默认使用 `gemini-3.5-transcribe-live`进行实时转写，该模型在ai studio中的免费层级可以无限额使用。
+不推荐使用分段转写模式，其对应的gemini-3.5-transcribe提供给免费层级的用量较少，更适合转写整个音频文件。
 
 1. 打开 [Google AI Studio](https://aistudio.google.com/)，使用 Google 账号登录，按页面提示完成首次使用设置。
 2. 进入 [API Keys 页面](https://aistudio.google.com/api-keys)。新用户可能已有默认项目和密钥；也可点击 **Create API key**，选择或创建自己的项目。已有 Cloud 项目需先在 Projects 导入。
 3. 在项目/密钥列表确认 **Billing Tier 为 Free Tier**。如只想使用免费层级，不进行 **Set up billing / Upgrade**，也不要选择已经关联付费账单的项目。
 4. 复制密钥，在 LectureFlow 的“连接设置 → Gemini API Key”中粘贴，点击“保存并应用”；本地开发也可填入 `.env` 的 `GEMINI_API_KEY`。不要将密钥写进仓库。
 
-创建方式参考 [Google 官方密钥教程](https://ai.google.dev/gemini-api/docs/api-key)及[免费层级说明](https://ai.google.dev/gemini-api/docs/billing/)，于 2026-10-06 核对。
+
 
 ## 快速开始
 
