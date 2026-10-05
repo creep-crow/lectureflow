@@ -23,9 +23,12 @@ async function request(
     body: body ? JSON.stringify(body) : undefined,
   });
   let data;
+  const responseText = await r.text();
   try {
-    data = await r.json();
-  } catch {}
+    data = JSON.parse(responseText);
+  } catch {
+    data = { unexpectedResponse: responseText.slice(0, 2000) };
+  }
   return { status: r.status, data };
 }
 function check(v, message) {
@@ -465,9 +468,11 @@ check(
     400,
   "Gemini invalid input fails before network request",
 );
+const invalidTranslation = await request("/api/translate", { text: "" });
 check(
-  (await request("/api/translate", { text: "" })).status === 400,
-  "DeepSeek invalid input fails before network request",
+  invalidTranslation.status === 400,
+  "DeepSeek invalid input fails before network request" +
+    (invalidTranslation.status === 400 ? "" : " (received " + invalidTranslation.status + ": " + JSON.stringify(invalidTranslation.data) + ")"),
 );
 const managed = await request("/api/classrooms?manage=1&q=Integration%20test");
 check(

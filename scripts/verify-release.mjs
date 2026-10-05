@@ -3,7 +3,7 @@ import { resolve, join } from "node:path";
 import { parseEnv } from "node:util";
 const root = resolve("dist");
 // Cloudflare generates this local-development sidecar during builds.
-// Runtime secrets are managed by Sites; they must never enter the archive.
+// Runtime secrets come from local environment or hosting; never archive them.
 for (const relative of ["server/.dev.vars", "server/.env"]) {
   const path = resolve(root, relative);
   if (!path.startsWith(root + "\\") && !path.startsWith(root + "/"))

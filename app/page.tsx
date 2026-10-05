@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/classroom-link";
 import { useRouter } from "next/navigation";
 import {
   AudioLines,
@@ -65,6 +65,7 @@ export default function Home() {
     [title, setTitle] = useState(""),
     [copied, setCopied] = useState(false),
     [endpoint, setEndpoint] = useState(""),
+    [mcpConfig, setMcpConfig] = useState(""),
     [configured, setConfigured] = useState({ gemini: false, deepseek: false });
   const scroll = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -112,7 +113,13 @@ export default function Home() {
     }
   }
   function openMcp(value: boolean) {
-    if (value) setEndpoint(location.origin + "/mcp");
+    if (value) {
+      setEndpoint(location.origin + "/mcp");
+      void fetch("/api/local/mcp-config")
+        .then((response) => (response.ok ? response.json() : null))
+        .then((data) => setMcpConfig(data ? JSON.stringify(data, null, 2) : ""))
+        .catch(() => setMcpConfig(""));
+    }
     setMcpOpen(value);
   }
   function begin() {
@@ -153,7 +160,7 @@ export default function Home() {
           </button>
           <span className="private-label">
             <span />
-            私密课堂空间
+            本地课堂空间
           </span>
           <button
             className="icon-btn"
@@ -167,7 +174,7 @@ export default function Home() {
           </button>
           <a
             className="avatar"
-            title="登录课堂空间"
+            title="打开本地课堂"
             href="/signin-with-chatgpt?return_to=/"
           >
             L
@@ -185,7 +192,7 @@ export default function Home() {
           </div>
           <button className="outline-btn" onClick={() => openMcp(true)}>
             <Plug size={16} />
-            连接 ChatGPT
+            连接总结助手
             <ArrowUpRight size={15} />
           </button>
         </section>
@@ -628,19 +635,30 @@ export default function Home() {
       </Dialog>
       <Dialog open={mcpOpen} onOpenChange={openMcp}>
         <DialogContent className="mcp-dialog">
-          <DialogTitle>让 ChatGPT 理解你的课堂</DialogTitle>
+          <DialogTitle>连接本地课堂与总结助手</DialogTitle>
           <DialogDescription>
-            连接后，ChatGPT
-            可以读取你的课堂和笔记，把总结分析保存回来。它不参与转写或翻译。
+            支持本地 MCP 的桌面助手可以读取课堂和笔记，将总结分析保存回来。
+            它不参与转写或翻译。
           </DialogDescription>
           <ol className="mcp-steps">
             <li>
-              在 ChatGPT / Codex 的插件中，找到“个人 → 由你创建”的
-              LectureFlow，安装并连接。
+              在 Codex 等桌面客户端添加本地 MCP，使用项目目录的 mcp.cmd。
+              下方配置已填写这台电脑的程序位置。
             </li>
-            <li>在对话中启用 LectureFlow，发送下方的总结请求。</li>
+            <li>启用 LectureFlow，发送下方的总结请求。</li>
             <li>完成后回到此处；“课堂总结”会自动同步。</li>
           </ol>
+          {mcpConfig ? (
+            <details>
+              <summary>查看本地 MCP 配置</summary>
+              <pre className="mcp-code">{mcpConfig}</pre>
+              <button className="outline-btn" onClick={() => void copy(mcpConfig)}>
+                <Copy size={14} />复制 MCP 配置
+              </button>
+            </details>
+          ) : (
+            <p className="settings-help">请通过 start.cmd 或 bash start.sh 启动，以获取本地 MCP 配置。</p>
+          )}
           <div className="mcp-code">{prompt}</div>
           <button
             className="dark-btn"
@@ -652,7 +670,7 @@ export default function Home() {
           </button>
           {c.demo && (
             <p className="settings-help">
-              示例未上传，无法由 MCP 读取。请先创建真实课堂。
+              示例未保存，无法由 MCP 读取。请先创建真实课堂。
             </p>
           )}
           <details>
@@ -662,8 +680,8 @@ export default function Home() {
               list_classrooms · read_classroom · read_notes ·
               save_classroom_analysis
               <br />
-              云端发布后通过私密插件认证。本地预览地址不能直接供远程 ChatGPT
-              连接。
+              本地桌面客户端使用 stdio 入口。ChatGPT 网页版无法直接执行本机脚本；
+              使用网页版时可导出课堂分析，远程 MCP 需另行配置。
             </p>
           </details>
         </DialogContent>

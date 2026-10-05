@@ -5,7 +5,7 @@ flowchart LR
   Mic[系统麦克风] --> PCM[16 kHz PCM]
   PCM --> Gemini[Gemini Live]
   Gemini --> English[确认的英文原文]
-  English --> DB[(D1)]
+  English --> DB[(本地 SQLite)]
   English --> Initial[立即初译]
   DB --> Context[已完成双语上下文]
   Context --> Initial
@@ -14,9 +14,17 @@ flowchart LR
   Context --> Edit
   Edit --> CAS[整组快照校验]
   CAS --> DB
-  ChatGPT[ChatGPT 总结] --> MCP[MCP 路由]
+  ChatGPT[桌面客户端总结] --> Stdio[本地 stdio]
+  Stdio --> Local[本地会话入口]
+  Local --> MCP[MCP 路由]
   MCP <--> DB
 ```
+
+## 本地启动
+
+`start.cmd` / `start.sh` 先补齐 Node.js 和 npm；`scripts/local.mjs` 管理依赖缓存、构建、迁移、启动互斥与服务复用。`local-server.mjs` 核验 loopback Host / Origin、签发本机会话、清除外来身份头并向构建后的后台注入本地用户。`local-db.mjs` 维护 SQLite 迁移记录与升级备份。`mcp-stdio.mjs` 将桌面 MCP 消息转发至同一后台，所有日志走 stderr。
+
+本地版本不注册 Sites，也不使用开发模式的身份模拟。Miniflare/workerd 和 D1 SQLite 作为随应用安装的固定本地运行时；Wrangler 只管理迁移。保留原路由和数据访问代码，网页与 MCP 使用相同的本地身份和数据库目录。
 
 ## 转写与翻译
 
@@ -34,7 +42,7 @@ FastTranslator 对每个确认片段立即请求初译，不等语义断句，�
 
 OpenAI 兼容保留完整聊天端点，模型列表使用同级 /models；DeepSeek 保留原基础网址处理。默认服务端密钥仅用于允许的官方 DeepSeek 地址。SSE 转发字符数与思考状态，完整输出校验后提交，不展示或保存原始推理文本。
 
-classrooms 保存标题、笔记、修订版本和删除时间，segments 保存原文、时间戳、中文和分组，analyses 追加保存 ChatGPT 分析。所有查询按可信 owner 筛选。删除进入回收站，不提供永久清除 UI。生产身份来自 Sites，本地仅模拟 loopback 账户。
+classrooms 保存标题、笔记、修订版本和删除时间，segments 保存原文、时间戳、中文和分组，analyses 追加保存分析。所有查询按可信 owner 筛选。删除进入回收站，不提供永久清除 UI。本地身份由独立 loopback 会话入口提供，维持单用户课堂空间；不依赖 Sites 身份注入。
 
 ## 关键代码
 
@@ -47,7 +55,8 @@ classrooms 保存标题、笔记、修订版本和删除时间，segments 保存
 | `lib/translation-*.ts` | 协议、网址、密钥池及 SSE |
 | `app/api/classrooms` / `lib/classroom-store.ts` | 课堂读写、分页、冲突与原子保存 |
 | `app/records` | 回看、管理和回收站 |
-| `app/mcp/route.ts` | 远程 MCP |
+| `app/mcp/route.ts` / `scripts/mcp-stdio.mjs` | MCP 工具与本地 stdio |
+| `scripts/local*.mjs` | 独立本地启动、认证、运行时与迁移 |
 | `hooks/use-webmcp.ts` | 浏览器课堂只读工具 |
 | `drizzle` | D1 迁移 |
 

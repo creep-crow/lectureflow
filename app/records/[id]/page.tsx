@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/classroom-link";
 import { Download, Mic, BookOpen, Sparkles } from "lucide-react";
 import { RecordsShell } from "@/components/records-shell";
 import { readFullClassroom, downloadClassroom } from "@/lib/classroom-client";
