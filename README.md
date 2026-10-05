@@ -3,7 +3,6 @@
 
 通过系统麦克风实时转写英文课堂，先显示中文初译，再结合前文拼接、断句和润色；使用 ChatGPT 通过 MCP 读取课堂并保存总结分析。
 
-公开版本默认在自己的电脑运行，网站与本地 MCP 共用本机 SQLite 数据库。不需要 Sites / Cloudflare 账号、Git 或预装 Node.js；首次运行自动补齐依赖。原作者的 Sites 自用版本单独维护。
 
 **Windows：下载并解压源码，双击 `start.cmd`。macOS / Linux：运行 `bash start.sh`。** 首次启动后在网页填写自己的 Gemini 和翻译密钥。详细步骤见[本地一键运行](docs/LOCAL.md)。
 
