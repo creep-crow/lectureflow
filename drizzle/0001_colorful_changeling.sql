@@ -1,0 +1,1 @@
+ALTER TABLE `segments` ADD `translation_group` text DEFAULT '[]' NOT NULL;
